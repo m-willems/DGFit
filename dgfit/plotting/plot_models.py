@@ -131,8 +131,6 @@ def main():
         rechte = []
         models = ["WD01", "ZDA04", "HD23", "Y24"]
 
-        mark = 1
-
         if args.dustproperty == "emission":
             waves = OD.ir_emission_waves
             data_waves = hdu.data["WAVE"]
@@ -143,6 +141,7 @@ def main():
             if args.no_ylogscale:
                 ylogscale = False
             ylim = False
+            mark = 5
 
         elif args.dustproperty == "extinction":
             waves = OD.ext_waves
@@ -158,7 +157,7 @@ def main():
             if args.no_ylogscale:
                 ylogscale = False
             ylim = False
-            mark = 1
+            mark = 10
 
         elif args.dustproperty == "albedo":
             waves = OD.scat_a_waves
@@ -192,6 +191,7 @@ def main():
             rechte[19] = 1 - c[7]
             rechte[15] = (rechte[14] + rechte[16]) / 2
             rechte[18] = (rechte[17] + rechte[19]) / 2
+            mark = 1
 
         elif args.dustproperty == "g":
             waves = OD.scat_g_waves
@@ -206,6 +206,7 @@ def main():
             for wave in data_waves:
                 b = (0.08768592371741601 * wave) + 0.6176183611711199
                 rechte.append(b)
+            mark = 1
 
         ax1.plot(
             data_waves,
@@ -213,7 +214,7 @@ def main():
             colors[j] + ltype,
             marker=markers[j],
             label=models[j],
-            markevery=1,
+            markevery=mark,
         )
 
         residuals = (data - hdu.data[data_name]) / data

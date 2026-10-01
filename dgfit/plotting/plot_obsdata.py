@@ -98,10 +98,17 @@ def plot(OD, ISRF="none", units="AV", png=False, eps=False, pdf=False):
             ax[1, 0].legend(loc=2)
 
         if OD.fit_ir_emission:
+            waves = OD.ir_emission_waves
+            waves_unc = OD.ir_emission_av_unc
+            i = 0
+            for wave in waves:
+                    if wave in [3.3, 3.53]:
+                        waves_unc[i] *= 10
+                    i += 1
             ax[0, 1].errorbar(
-                OD.ir_emission_waves,
+                waves,
                 OD.ir_emission_av,
-                yerr=OD.ir_emission_av_unc,
+                yerr=waves_unc,
                 fmt="x",
                 label="Emission",
                 color="blue",

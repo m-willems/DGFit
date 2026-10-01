@@ -343,7 +343,7 @@ PARAM_SPECS = {
             "params": ["A", "a_0", "sigma"],
             "indexed": True,
         },
-        "aSil-2-D22": {
+        "X35-X50B-D22": {
             "use_factor": "factor_sil",
             "params": ["A", "a_0", "sigma"],
             "indexed": True,
@@ -492,6 +492,38 @@ def add_priors_nautilus(pnames, logs, prior_ranges, prior):
                 prior.add_parameter(
                     f"{name}", dist=(prior_ranges[i][0], prior_ranges[i][1])
                 )
+
+
+def sample_prior(prior_ranges, logs, n_samples=1000):
+    """
+    Generate samples from the same priors used by Nautilus.
+    """
+
+    n_params = len(prior_ranges)
+
+    samples = np.zeros((n_samples, n_params))
+
+    for i in range(n_params):
+
+        lower, upper = prior_ranges[i]
+
+        if logs[i]:
+            # log-uniform prior
+            samples[:, i] = 10 ** np.random.uniform(
+                np.log10(lower),
+                np.log10(upper),
+                n_samples
+            )
+
+        else:
+            # uniform prior
+            samples[:, i] = np.random.uniform(
+                lower,
+                upper,
+                n_samples
+            )
+
+    return samples
 
 
 def main():
@@ -670,6 +702,8 @@ def main():
 
         eps = 1e-6
         p0 = []
+        logs = []
+        prior_ranges = []
         lowers = []
         uppers = []
         used_sizes = []
@@ -746,10 +780,14 @@ def main():
                         start_value /= new_factor_sil
                     upper *= 10 / len(dustmodel.components[k].sizes)
 
+                upper *= 10    
+
                 prior.add_parameter(
                     f"c{k + 1}_s{kk + 1}", dist=loguniform(lower, upper)
                 )
                 p0.append(start_value)
+                logs.append(True)
+                prior_ranges.append([lower, upper])
                 lowers.append(lower)
                 uppers.append(upper)
                 used_sizes.append(float(dustmodel.components[k].sizes[kk] * 10000))
@@ -761,11 +799,15 @@ def main():
                 p0.append(1)
                 lowers.append(0.2)
                 uppers.append(5)
+                logs.append(False)
+                prior_ranges.append([0.2, 5])
 
         if ISRF:
             pnames += ["RF"]
             prior.add_parameter("RF", dist=(0.0001, 30))
             p0.append(1)
+            logs.append(False)
+            prior_ranges.append([0.0001, 30])
             lowers.append(0.0001)
             uppers.append(30)
 
@@ -825,6 +867,11 @@ def main():
             map_index = np.argmax(log_l)
             opt_params = points[map_index]
             weights = np.exp(log_w)
+            # prior_points = sample_prior(
+            #     prior_ranges,
+            #     logs,
+            #     n_samples=100000
+            #     )  # Sample from the prior for comparison   
 
             with h5py.File(f"posterior_samples_{args.tag}.h5", "w") as f:
                 f["points"] = points
@@ -834,13 +881,45 @@ def main():
 
             if args.cornerplot:
                 n_params = points.shape[1]
-                chunk_size = 5
+                chunk_size = 4
 
                 for start in range(0, n_params, chunk_size):
                     end = start + chunk_size
+                    #priors_subset = prior_points[:, start:end]
                     pts_subset = points[:, start:end]
                     labels_subset = pnames[start:end]
                     opt_subset = opt_params[start:end]
+                    #logs_subset = logs[start:end]
+                    #priors_subset[:, logs_subset] = np.log(priors_subset[:, logs_subset])
+                    #pts_subset[:, logs_subset] = np.log(pts_subset[:, logs_subset])
+
+                    # fig = corner.corner(
+                    #     priors_subset,
+                    #     bins=100,
+                    #     labels=labels_subset,
+                    #     color="gray",
+                    #     plot_datapoints=False,
+                    #     plot_density=False,
+                    #     plot_contours=True,
+                    #     fill_contours=False,
+                    #     levels=[0.68,0.95],
+                    # )
+
+
+                    # corner.corner(
+                    #     pts_subset,
+                    #     weights=weights,
+                    #     bins=100,
+                    #     labels=labels_subset,
+                    #     color="purple",
+                    #     show_titles=True,
+                    #     title_fmt=".3g",
+                    #     quantiles=[0.16,0.5,0.84],
+                    #     levels=[0.68,0.95],
+                    #     plot_datapoints=False,
+                    #     #range=np.repeat(0.999,len(labels_subset)),
+                    #     fig=fig,
+                    # )
 
                     fig = corner.corner(
                         pts_subset,
