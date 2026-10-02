@@ -25,6 +25,7 @@ from dgfit.dustmodel import (
 )
 from dgfit.obsdata import ObsData
 from dgfit.dustclasses import DustCompositions
+from dgfit.prior_transform import LogUniformLin
 
 
 def DGFit_cmdparser():
@@ -782,9 +783,12 @@ def main():
 
                 upper *= 10    
 
+                # prior.add_parameter(
+                #     f"c{k + 1}_s{kk + 1}", dist=loguniform(lower, upper)
+                # )
                 prior.add_parameter(
-                    f"c{k + 1}_s{kk + 1}", dist=loguniform(lower, upper)
-                )
+                                    f"c{k + 1}_s{kk + 1}", dist=LogUniformLin(lower, upper)
+                                )
                 p0.append(start_value)
                 logs.append(True)
                 prior_ranges.append([lower, upper])
